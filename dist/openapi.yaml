@@ -1,0 +1,323 @@
+openapi: 3.0.3
+info:
+  title: Notes Auth API
+  description: Autentikasi pengguna dan manajemen catatan.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+    description: Server lokal untuk pengembangan
+
+paths:
+  /api/auth/register:
+    post:
+      summary: Registrasi pengguna baru
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, password]
+              properties:
+                username:
+                  type: string
+                  example: johndoe
+                email:
+                  type: string
+                  example: john@example.com
+                password:
+                  type: string
+                  example: password123
+                status:
+                  type: string
+                  example: active
+      responses:
+        '201':
+          description: Registrasi berhasil
+        '400':
+          description: Validasi gagal
+        '500':
+          description: Error server
+
+  /api/auth/login:
+    post:
+      summary: Login pengguna
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                  example: johndoe
+                password:
+                  type: string
+                  example: password123
+      responses:
+        '200':
+          description: Login berhasil
+        '400':
+          description: Username/password kosong
+        '401':
+          description: Password salah
+        '404':
+          description: Pengguna tidak ditemukan
+        '500':
+          description: Error saat login
+
+  /api/auth/forgot-password:
+    post:
+      summary: Minta email reset password
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username]
+              properties:
+                username:
+                  type: string
+                  example: johndoe
+      responses:
+        '200':
+          description: Email reset berhasil dikirim
+        '404':
+          description: Username tidak ditemukan
+        '500':
+          description: Gagal mengirim email
+
+  /api/auth/verify-reset-token/{token}:
+    get:
+      summary: Verifikasi token reset password
+      tags:
+        - Authentication
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Token valid
+        '400':
+          description: Token kedaluwarsa
+        '500':
+          description: Error saat verifikasi
+
+  /api/auth/reset-password/{token}:
+    post:
+      summary: Reset password pengguna
+      tags:
+        - Authentication
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password:
+                  type: string
+                  example: newpassword123
+      responses:
+        '200':
+          description: Password berhasil direset
+        '400':
+          description: Token tidak valid atau kedaluwarsa
+        '500':
+          description: Error saat reset password
+
+  /api/note:
+    post:
+      summary: Buat catatan baru
+      tags:
+        - Notes
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, content]
+              properties:
+                title:
+                  type: string
+                  example: Catatan Harian
+                content:
+                  type: string
+                  example: Ini adalah isi dari catatan
+      responses:
+        '201':
+          description: Catatan berhasil dibuat
+        '400':
+          description: Gagal membuat catatan
+        '401':
+          description: Tidak diotorisasi
+
+    get:
+      summary: Ambil semua catatan milik user
+      tags:
+        - Notes
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Daftar catatan berhasil diambil
+        '500':
+          description: Gagal mengambil catatan
+
+  /api/note/search/{query}:
+    get:
+      summary: Cari catatan berdasarkan query
+      tags:
+        - Notes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: query
+          in: path
+          required: true
+          schema:
+            type: string
+            example: harian
+      responses:
+        '200':
+          description: Hasil pencarian ditemukan
+        '500':
+          description: Gagal melakukan pencarian
+
+  /api/note/{noteId}:
+    get:
+      summary: Ambil detail catatan berdasarkan noteId
+      tags:
+        - Notes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: 0a1b2c3d-4e5f-6g7h-8i9j
+      responses:
+        '200':
+          description: Detail catatan berhasil diambil
+        '404':
+          description: Catatan tidak ditemukan
+        '500':
+          description: Gagal mengambil catatan
+
+    patch:
+      summary: Update catatan berdasarkan noteId
+      tags:
+        - Notes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  example: Catatan Update
+                content:
+                  type: string
+                  example: Ini adalah update isi catatan
+      responses:
+        '200':
+          description: Catatan berhasil diperbarui
+        '400':
+          description: Gagal memperbarui catatan
+        '404':
+          description: Catatan tidak ditemukan
+
+    delete:
+      summary: Hapus catatan berdasarkan noteId
+      tags:
+        - Notes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Catatan berhasil dihapus
+        '404':
+          description: Catatan tidak ditemukan
+        '500':
+          description: Gagal menghapus catatan
+
+  /api/note/{noteId}/attachment:
+    post:
+      summary: Tambahkan attachment ke catatan
+      tags:
+        - Notes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: 0a1b2c3d-4e5f-6g7h-8i9j
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Attachment berhasil ditambahkan
+        '400':
+          description: File tidak dikirim atau gagal upload
+        '404':
+          description: Catatan tidak ditemukan
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
